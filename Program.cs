@@ -1,42 +1,88 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
+using System.Xml.Serialization;
 
-/*Реалізація системи для обробки фінансових транзакцій
-  Ваша програма повинна містити наступні елементи:
-  - Створення інтерфейсу ITransaction, який містить методи для здійснення транзакції та перевірки стану транзакції.
-  - Створення класу FinancialTransaction, який реалізує інтерфейс ITransaction та містить інформацію про фінансову транзакцію (сума, дата тощо).
-  - Побудова ієрархії класів для різних типів транзакцій: базовий клас Transaction, який містить загальні властивості, та похідні класи, наприклад,
-    DepositTransaction, WithdrawalTransaction тощо.
-  - Використання конструкторів для ініціалізації об'єктів класів та деструкторів для звільнення ресурсів.
-  - Асинхронний виклик методів через делегат для здійснення транзакцій.
-  - Визначення події для сповіщення про успішне або неуспішне завершення транзакції та організація взаємодії об'єктів через цю подію.
-  - Розробка класу винятків для обробки помилок під час виконання фінансових транзакцій.*/
+/*Зчитує дані з файлу employees.xml. Файл містить список співробітників у форматі XML, де кожен співробітник має такі властивості: Name, Position, HireDate.
+Сортує співробітників за датою прийому на роботу (від найстаріших до найновіших) за допомогою LINQ.
+Зберігає відсортований список співробітників у новий XML файл sorted_employees.xml.
+Записує інформацію про співробітників в текстовий файл employees.txt у наступному форматі:
 
-namespace Module2
+Name: [Name] Position: [Position] HireDate: [HireDate]*/
+
+public class Employee
 {
-    public interface ITransaction
+    public string Name { get; set; }
+    public string Position { get; set; }
+    public DateTime HireDate { get; set; }
+
+    public Employee() { }
+
+    public Employee(string Name, string Position, DateTime HireDate)
     {
-        void DoTransaction(int sum);
-        void CheckTransaction();
+        this.Name = Name;
+        this.Position = Position;
+        this.HireDate = HireDate;
     }
-    class Program
+
+    public override string ToString()
     {
-        static void Main(string[] args)
+        return $"Name: {Name}\nPosition: {Position}\nHireDate: {HireDate}\n";
+    }
+}
+
+internal class Program
+{
+    static void Main()
+    {
+        string file = "C:\\Домашнє завдання\\ЛНУ\\Програмування C#\\Модуль\\modul2\\modul2.employees.xml";
+        string file_save = "C:\\Домашнє завдання\\ЛНУ\\Програмування C#\\Модуль\\modul2\\sorted_employees.xml";
+        string file_save_txt = "C:\\Домашнє завдання\\ЛНУ\\Програмування C#\\Модуль\\modul2\\employees.txt";
+
+
+        List<Employee> employees = new List<Employee>();
+        employees = LoadFromXml(file);
+        foreach(Employee employee in employees)
         {
-            DepositTransaction dep_transaction = new DepositTransaction(500);
-            WithdrawalTransaction wit_transaction = new WithdrawalTransaction(1000);
-            dep_transaction.DoTransaction(100);
-            dep_transaction.CheckTransaction();
-            Console.WriteLine(dep_transaction);
-            wit_transaction.DoTransaction(2000);
-            wit_transaction.CheckTransaction();
-            Console.WriteLine(wit_transaction);
+            Console.WriteLine(employee);
+        }
 
-            Console.ReadLine();
+        employees = (from e in employees
+                     orderby e.HireDate
+                     select e).ToList();
 
+        SaveToXml(employees, file_save);
+
+        using (StreamWriter writer = new StreamWriter(file_save_txt))
+        {
+            foreach (var employee in employees)
+            {
+                writer.WriteLine($"Name: {employee.Name} Position: {employee.Position} HireDate: {employee.HireDate:yyyy-MM-dd}");
+            }
+        }
+    }
+
+    static void SaveToXml(List<Employee> employees, string file)
+    {
+        XmlSerializer serializer = new XmlSerializer(typeof(List<Employee>));
+        using (FileStream f = new FileStream(file, FileMode.Create))
+        {
+            serializer.Serialize(f, employees);
+        }
+    }
+
+    static List<Employee> LoadFromXml(string filePath)
+    {
+        XmlSerializer serializer = new XmlSerializer(typeof(List<Employee>));
+        using (FileStream f = new FileStream(filePath, FileMode.Open))
+        {
+            return (List<Employee>)serializer.Deserialize(f);
         }
     }
 }
+
+
+
+
+
+
